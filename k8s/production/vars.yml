@@ -1,0 +1,29 @@
+env: production
+project_name: surgicare-lms
+namespace: 'prod-surgeries'
+fqdn: 'api.internal.surgicare.in'
+public_fqdn: 'api.surgicare.in'
+tag: '{{ prefix }}-{{ build_number }}'
+context: nipe-eks-prod
+env_during_build: False
+min_replicas: 2
+max_replicas: 3
+aws_profile: nipe
+configmap:
+  PORT: 8000
+  HOST: '0.0.0.0'
+  DATABASE_USERNAME: 'root'
+  DATABASE_NAME: 'surgicare_lms'
+  DATABASE_HOST: 'surgicare-cms-prod.cemnwxhq1soi.ap-south-1.rds.amazonaws.com'
+  DATABASE_PASSWORD: 'password'
+  DATABASE_PORT: 3306
+  DATABASE_SSL: false
+  LSQ_API: https://api-in21.leadsquared.com/v2/LeadManagement.svc
+  LSQ_ACCESS_KEY: u$ree6b79a3f1e16db2825f8d8b525be9cd
+  LSQ_SECRET_KEY: 2b122e7cc44bc55dbf646feef2bf1cbec60c818f
+  CMS_HOST: https://dev-surgicare-cms.dev.surgicare.in
+  METRICS_PORT: 9000
+  ELASTIC_APM_SERVICE_NAME: surgicare-api
+  ELASTIC_APM_ENABLED: true
+  ELASTIC_APM_ENVIRONMENT: production
+  ELASTIC_APM_SERVER_URL: http://apm.vpc.pharmeasy.in
