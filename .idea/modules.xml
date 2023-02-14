@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ni-go-boiler-plate.iml" filepath="$PROJECT_DIR$/.idea/ni-go-boiler-plate.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mimservice.iml" filepath="$PROJECT_DIR$/mimservice.iml" />
     </modules>
   </component>
 </project>
