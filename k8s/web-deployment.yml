@@ -1,0 +1,142 @@
+{% if configmap is defined %}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ prefix }}-{{ project_name }}"
+  namespace: "{{ namespace }}"
+data:
+  {% for key, value in configmap.items() %}
+  {{ key }}: "{{ value }}"
+  {% endfor %}
+  {% endif %}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ prefix }}-{{ project_name }}-deployment
+  namespace: {{ namespace }}
+  labels:
+    k8s-app: {{ prefix }}-{{ project_name }}
+spec:
+  progressDeadlineSeconds: 60
+  revisionHistoryLimit: 1
+  replicas: {{ min_replicas }}
+  selector:
+    matchLabels:
+      k8s-app: {{ prefix }}-{{ project_name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: {{ max_unavailable }}
+      maxSurge: {{ max_surge }}
+  template:
+    metadata:
+      labels:
+        k8s-app: "{{ prefix }}-{{ project_name }}"
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      containers:
+          - name: {{ project_name }}
+            image: "820116237501.dkr.ecr.ap-south-1.amazonaws.com/{{ project_name }}:{{ tag }}"
+            imagePullPolicy: IfNotPresent
+            ports:
+              - containerPort: 8080
+            readinessProbe:
+              failureThreshold: 20
+              httpGet:
+                path: /status
+                port: 8080
+              initialDelaySeconds: 120
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 2
+            livenessProbe:
+              failureThreshold: 5
+              httpGet:
+                path: /status
+                port: 8080
+              initialDelaySeconds: 100
+              periodSeconds: 8
+              successThreshold: 1
+              timeoutSeconds: 2
+            envFrom:
+{% if configmap is defined %}
+            - configMapRef:
+                name: "{{ prefix }}-{{ project_name }}"
+{% endif %}
+            - secretRef:
+                name: "{{ prefix }}-{{ project_name }}"
+            resources:
+              limits:
+                cpu: 0.6
+                memory: 1024Mi
+              requests:
+                cpu: 0.3
+                memory: 700Mi
+      nodeSelector:
+        workloadType: general-instana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ prefix }}-{{ project_name }}-service
+  namespace: {{ namespace }}
+  labels:
+    k8s-svc: {{ prefix }}-{{ project_name }}
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    k8s-app: {{ prefix }}-{{ project_name }}
+  type: ClusterIP
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: {{ prefix }}-{{ project_name }}
+  namespace: {{ namespace }}
+spec:
+  bypass_auth: true
+  host: {{ fqdn }}
+  prefix: /
+  rewrite: ""
+  service: {{ prefix }}-{{ project_name }}-service.{{ namespace }}:8080
+  timeout_ms: 200000
+{% if env == 'development' or env == 'production' %}
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: {{ prefix }}-{{ project_name }}-public-restricted
+  namespace: {{ namespace }}
+spec:
+  bypass_auth: true
+  host: {{ public_fqdn }}
+  prefix: /
+  rewrite: ''
+  service: {{ prefix }}-{{ project_name }}-service.{{ namespace }}:8080
+  timeout_ms: 200000
+{% endif %}
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta1
+metadata:
+  name: {{ prefix }}-{{ project_name }}-hpa
+  namespace: {{ namespace }}
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: {{ prefix }}-{{ project_name }}-deployment
+    apiVersion: apps/v1
+  minReplicas: {{ min_replicas }}
+  maxReplicas: {{ max_replicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: 95

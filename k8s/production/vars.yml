@@ -1,0 +1,16 @@
+env: production
+project_name: mimservice
+prefix: prod
+namespace: "production"
+fqdn: "{{ prefix }}-{{ project_name }}.private.thyrocare.com"
+public_fqdn: "prod-mimservice.thyrocare.com"
+tag: "{{ prefix }}-{{ build_number }}"
+context: thyrocare-eks-production
+aws_profile: default
+profile: default
+min_replicas: 3
+max_replicas: 5
+max_unavailable: 0
+max_surge: 25%
+configmap:
+  ENV: "production"

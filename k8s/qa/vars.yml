@@ -1,0 +1,13 @@
+env: qa
+project_name: mimservice
+prefix: qa
+namespace: "qa"
+fqdn: "{{ prefix }}-{{ project_name }}.qa.thyrocare.com"
+tag: "{{ prefix }}-{{ build_number }}"
+context: thyrocare-eks-dev
+aws_profile: default
+profile: default
+min_replicas: 1
+max_replicas: 2
+max_unavailable: 0
+max_surge: 25%
